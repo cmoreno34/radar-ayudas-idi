@@ -204,8 +204,24 @@ function urlRSS_rss2json(consulta){
 function urlRSS_allorigins(consulta){
   return `https://api.allorigins.win/get?url=${encodeURIComponent(urlGNews(consulta))}`;
 }
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 let FALLOS = 0;
+const CONCURRENCIA = 5;   // peticiones simultáneas
+
+// Ejecuta una lista de tareas async en lotes paralelos de tamaño `n`.
+async function enParalelo(tareas, n, onEach){
+  const resultados = new Array(tareas.length);
+  let i = 0;
+  const workers = Array.from({length: n}, async () => {
+    while(true){
+      const idx = i++;
+      if(idx >= tareas.length) return;
+      resultados[idx] = await tareas[idx]();
+      if(onEach) onEach(idx);
+    }
+  });
+  await Promise.all(workers);
+  return resultados;
+}
 
 // Parsea un XML RSS (string) y devuelve items {title, link, pubDate, description}.
 function parseRSS(xmlString){
@@ -221,7 +237,6 @@ function parseRSS(xmlString){
 }
 
 async function fetchFeed(consulta){
-  await sleep(250);
   // Intento 1: rss2json (devuelve JSON limpio).
   try{
     const r = await fetch(urlRSS_rss2json(consulta));
@@ -303,60 +318,48 @@ async function buscarTodo(){
   const total = convocatorias.length + noticias.length;
   let hechas = 0;
   const vistos = new Set();
+  const t0 = performance.now();
 
-  function avanzar(txt){
+  function avanzar(){
     hechas++;
     progreso.style.width = (100*hechas/total)+"%";
-    estado.textContent = `${txt} (${hechas}/${total})`;
+    estado.textContent = `Buscando… ${hechas}/${total} consultas (${CONCURRENCIA} en paralelo)`;
   }
 
-  // 1) Convocatorias dinámicas por centro.
-  for(const {centro, q} of convocatorias){
-    const items = await fetchFeed(q);
-    for(const it of items){
+  // Construimos una lista única de tareas (cada una devuelve sus items).
+  const tareas = [
+    ...convocatorias.map(({centro, q}) => async () => ({tipo:"conv", centro, q, items: await fetchFeed(q)})),
+    ...noticias.map(q => async () => ({tipo:"noti", q, items: await fetchFeed(q)})),
+  ];
+
+  const respuestas = await enParalelo(tareas, CONCURRENCIA, avanzar);
+
+  // Volcamos resultados con dedupe por URL.
+  for(const resp of respuestas){
+    for(const it of resp.items){
       if(!it.link || vistos.has(it.link)) continue;
       vistos.add(it.link);
       const resumen = limpiarHTML(it.description);
       RESULTADOS.push({
         titulo: it.title || "(sin título)",
-        fuente: centro.nombre,
+        fuente: resp.tipo === "conv" ? resp.centro.nombre : "Noticias digitalización",
         fecha: isoFecha(it.pubDate),
         url: it.link,
         resumen,
-        categoria:"convocatoria",
-        centro_id: centro.id,
+        categoria: resp.tipo === "conv" ? "convocatoria" : "noticia",
+        centro_id: resp.tipo === "conv" ? resp.centro.id : "",
         puntuacion: puntuar((it.title||"")+" "+resumen, kws),
       });
     }
-    avanzar(`Buscando "${q}" en ${centro.nombre}…`);
   }
 
-  // 2) Noticias dinámicas según intereses + sector.
-  for(const q of noticias){
-    const items = await fetchFeed(q);
-    for(const it of items){
-      if(!it.link || vistos.has(it.link)) continue;
-      vistos.add(it.link);
-      const resumen = limpiarHTML(it.description);
-      RESULTADOS.push({
-        titulo: it.title || "(sin título)",
-        fuente: "Noticias digitalización",
-        fecha: isoFecha(it.pubDate),
-        url: it.link,
-        resumen,
-        categoria:"noticia",
-        centro_id:"",
-        puntuacion: puntuar((it.title||"")+" "+resumen, kws),
-      });
-    }
-    avanzar(`Noticia: "${q}"…`);
-  }
+  const segs = ((performance.now() - t0)/1000).toFixed(1);
 
   const totalCons = convocatorias.length + noticias.length;
   if(RESULTADOS.length === 0){
     estado.textContent = `⚠️ 0 resultados (${FALLOS}/${totalCons} consultas fallaron). Reintenta en 1 min.`;
   } else {
-    estado.textContent = `✅ ${RESULTADOS.length} resultados (${totalCons - FALLOS}/${totalCons} consultas OK)`;
+    estado.textContent = `✅ ${RESULTADOS.length} resultados en ${segs}s (${totalCons - FALLOS}/${totalCons} consultas OK)`;
   }
   btnBuscar.disabled = false;
   btnCSV.disabled = RESULTADOS.length === 0;
