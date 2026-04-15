@@ -138,33 +138,19 @@
 
 <script>
 // ================== Configuración ==================
+// Cada centro tiene un "ancla" (texto base) y una consulta genérica.
+// Las consultas REALES se construyen luego combinando ancla + sector + intereses
+// del usuario, para que distintos perfiles obtengan distintos resultados.
 const CENTROS = [
-  { id:"cdti", nombre:"CDTI", consultas:[
-    "site:cdti.es convocatoria","CDTI ayudas convocatoria abierta","CDTI Neotec","CDTI Misiones"]},
-  { id:"horizonte_europa", nombre:"Horizonte Europa", consultas:[
-    "Horizonte Europa convocatoria abierta pymes","Horizon Europe call open SMEs","Cluster 4 digital Horizon Europe"]},
-  { id:"eic", nombre:"EIC — European Innovation Council", consultas:[
-    "EIC Pathfinder call","EIC Accelerator open call","European Innovation Council convocatoria"]},
-  { id:"enisa", nombre:"ENISA", consultas:[
-    "site:enisa.es línea","ENISA préstamo participativo pymes","ENISA emprendedores"]},
-  { id:"red_es", nombre:"Red.es / Kit Digital", consultas:[
-    "Kit Digital convocatoria pymes","Red.es ayudas digitalización","Acelera Pyme ayudas"]},
-  { id:"icex", nombre:"ICEX", consultas:[
-    "ICEX Next pymes internacionalización","ICEX convocatoria ayudas"]},
-  { id:"mincotur", nombre:"Ministerio de Industria", consultas:[
-    "Ministerio Industria ayudas I+D pymes convocatoria","PERTE ayudas convocatoria"]},
-  { id:"aei", nombre:"Agencia Estatal de Investigación", consultas:[
-    "Agencia Estatal Investigación convocatoria","AEI ayudas I+D"]},
-  { id:"eureka", nombre:"Eureka / Eurostars", consultas:[
-    "Eurostars convocatoria pymes I+D","Eureka cluster call"]},
-];
-
-const CONSULTAS_NOTICIAS = [
-  "digitalización pymes España",
-  "transformación digital pequeña empresa",
-  "ayudas digitalización pymes",
-  "inteligencia artificial pymes España",
-  "ciberseguridad pymes",
+  { id:"cdti",             nombre:"CDTI",                              ancla:"CDTI"                                    },
+  { id:"horizonte_europa", nombre:"Horizonte Europa",                  ancla:"\"Horizonte Europa\" OR \"Horizon Europe\"" },
+  { id:"eic",              nombre:"EIC — European Innovation Council", ancla:"\"EIC Accelerator\" OR \"EIC Pathfinder\""  },
+  { id:"enisa",            nombre:"ENISA",                             ancla:"ENISA"                                   },
+  { id:"red_es",           nombre:"Red.es / Kit Digital",              ancla:"\"Kit Digital\" OR \"Red.es\""              },
+  { id:"icex",             nombre:"ICEX",                              ancla:"ICEX"                                    },
+  { id:"mincotur",         nombre:"Ministerio de Industria",           ancla:"\"Ministerio de Industria\" OR PERTE"       },
+  { id:"aei",              nombre:"Agencia Estatal de Investigación",  ancla:"\"Agencia Estatal de Investigación\""       },
+  { id:"eureka",           nombre:"Eureka / Eurostars",                ancla:"Eurostars OR Eureka"                     },
 ];
 
 const INTERESES = [
@@ -232,15 +218,52 @@ function isoFecha(s){
 function escape(s){ return (s||"").replace(/[&<>"']/g, m=>(
   {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
 
+// Construye consultas DINÁMICAS a partir del perfil:
+// para cada centro lanza ancla+sector y ancla+cada interés.
+// Para noticias mezcla intereses con "pymes España" y con el sector.
+function construirConsultas(perfil){
+  const sector = (perfil.sector && perfil.sector !== "general") ? perfil.sector : "";
+  const intereses = perfil.intereses && perfil.intereses.length ? perfil.intereses : ["pymes"];
+
+  const convocatorias = [];
+  for(const centro of CENTROS){
+    // 1) Una consulta genérica por centro (siempre).
+    convocatorias.push({centro, q: `${centro.ancla} convocatoria pymes`});
+    // 2) Consulta por sector (si el usuario eligió uno concreto).
+    if(sector){
+      convocatorias.push({centro, q: `${centro.ancla} ${sector}`});
+    }
+    // 3) Consulta por cada interés del usuario.
+    for(const it of intereses){
+      convocatorias.push({centro, q: `${centro.ancla} ${it}`});
+    }
+  }
+
+  const noticias = [];
+  for(const it of intereses){
+    noticias.push(`${it} pymes España`);
+  }
+  if(sector){
+    noticias.push(`digitalización ${sector} España`);
+    noticias.push(`${sector} pymes innovación España`);
+  } else {
+    noticias.push("digitalización pymes España");
+    noticias.push("transformación digital pequeña empresa");
+  }
+  return {convocatorias, noticias};
+}
+
 async function buscarTodo(){
   const perfil = leerPerfil();
   const kws = palabrasClave(perfil);
+  const {convocatorias, noticias} = construirConsultas(perfil);
+
   RESULTADOS = [];
   divResultados.innerHTML = "";
   btnCSV.disabled = true;
   btnBuscar.disabled = true;
 
-  const total = CENTROS.reduce((a,c)=>a+c.consultas.length,0) + CONSULTAS_NOTICIAS.length;
+  const total = convocatorias.length + noticias.length;
   let hechas = 0;
   const vistos = new Set();
 
@@ -250,30 +273,30 @@ async function buscarTodo(){
     estado.textContent = `${txt} (${hechas}/${total})`;
   }
 
-  for(const centro of CENTROS){
-    for(const consulta of centro.consultas){
-      const items = await fetchFeed(consulta);
-      for(const it of items){
-        if(!it.link || vistos.has(it.link)) continue;
-        vistos.add(it.link);
-        const resumen = limpiarHTML(it.description);
-        RESULTADOS.push({
-          titulo: it.title || "(sin título)",
-          fuente: centro.nombre,
-          fecha: isoFecha(it.pubDate),
-          url: it.link,
-          resumen,
-          categoria:"convocatoria",
-          centro_id: centro.id,
-          puntuacion: puntuar((it.title||"")+" "+resumen, kws),
-        });
-      }
-      avanzar(`Buscando en ${centro.nombre}…`);
+  // 1) Convocatorias dinámicas por centro.
+  for(const {centro, q} of convocatorias){
+    const items = await fetchFeed(q);
+    for(const it of items){
+      if(!it.link || vistos.has(it.link)) continue;
+      vistos.add(it.link);
+      const resumen = limpiarHTML(it.description);
+      RESULTADOS.push({
+        titulo: it.title || "(sin título)",
+        fuente: centro.nombre,
+        fecha: isoFecha(it.pubDate),
+        url: it.link,
+        resumen,
+        categoria:"convocatoria",
+        centro_id: centro.id,
+        puntuacion: puntuar((it.title||"")+" "+resumen, kws),
+      });
     }
+    avanzar(`Buscando "${q}" en ${centro.nombre}…`);
   }
 
-  for(const consulta of CONSULTAS_NOTICIAS){
-    const items = await fetchFeed(consulta);
+  // 2) Noticias dinámicas según intereses + sector.
+  for(const q of noticias){
+    const items = await fetchFeed(q);
     for(const it of items){
       if(!it.link || vistos.has(it.link)) continue;
       vistos.add(it.link);
@@ -289,10 +312,10 @@ async function buscarTodo(){
         puntuacion: puntuar((it.title||"")+" "+resumen, kws),
       });
     }
-    avanzar(`Buscando noticias…`);
+    avanzar(`Noticia: "${q}"…`);
   }
 
-  estado.textContent = `✅ ${RESULTADOS.length} resultados`;
+  estado.textContent = `✅ ${RESULTADOS.length} resultados (${convocatorias.length+noticias.length} consultas)`;
   btnBuscar.disabled = false;
   btnCSV.disabled = RESULTADOS.length === 0;
   pintar();
