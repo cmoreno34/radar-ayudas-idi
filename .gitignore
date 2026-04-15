@@ -2,4 +2,4 @@ venv/
 __pycache__/
 *.pyc
 .env
-datos/perfil_empresa.json
+# Nota: datos/perfil_empresa.json SÍ se versiona para que GitHub Actions lo use.
