@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Radar I+D+i — Demo SL</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --azul:#0b3d91; --azul2:#1e6ed9; --gris:#f4f6fb;
+    --oscuro:#111827; --borde:#e5e7eb; --acento:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       color:var(--oscuro);background:var(--gris);line-height:1.5}
+  header{background:linear-gradient(135deg,var(--azul),var(--azul2));color:#fff;
+         padding:32px 24px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+  header h1{margin:0;font-size:28px}
+  header p{margin:6px 0 0;opacity:.9}
+  main{max-width:1100px;margin:24px auto;padding:0 16px}
+  .perfil{background:#fff;border:1px solid var(--borde);border-radius:12px;
+          padding:16px 20px;margin-bottom:24px;display:flex;flex-wrap:wrap;gap:12px}
+  .chip{display:inline-block;background:var(--gris);border:1px solid var(--borde);
+        border-radius:999px;padding:4px 12px;font-size:13px}
+  h2{border-left:4px solid var(--azul2);padding-left:10px;margin-top:32px}
+  .tarjeta{background:#fff;border:1px solid var(--borde);border-radius:12px;
+           padding:16px 20px;margin-bottom:14px;transition:box-shadow .15s}
+  .tarjeta:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+  .tarjeta h3{margin:0 0 6px;font-size:17px}
+  .tarjeta h3 a{color:var(--azul);text-decoration:none}
+  .tarjeta h3 a:hover{text-decoration:underline}
+  .meta{font-size:13px;color:#555;margin-bottom:8px}
+  .meta .fuente{font-weight:600;color:var(--azul2)}
+  .meta .score{background:var(--acento);color:#fff;padding:1px 8px;border-radius:999px;
+               font-size:12px;margin-left:8px}
+  .resumen{font-size:14px;color:#374151}
+  footer{text-align:center;color:#6b7280;font-size:12px;padding:24px}
+  .vacio{background:#fff;border:1px dashed var(--borde);border-radius:12px;
+         padding:24px;text-align:center;color:#6b7280}
+</style>
+</head>
+<body>
+<header>
+  <h1>Radar de Ayudas I+D+i</h1>
+  <p>Resumen generado para <strong>Demo SL</strong> — 15/04/2026 13:22</p>
+</header>
+<main>
+  <section class="perfil">
+    <span class="chip">🏢 software</span>
+    <span class="chip">👥 pyme</span>
+    <span class="chip">🌍 nacional</span>
+    <span class="chip">✨ digitalización</span><span class="chip">✨ IA</span>
+  </section>
+
+  <h2>🎯 Convocatorias abiertas (2)</h2>
+  
+    
+    <article class="tarjeta">
+      <h3><a href="https://cdti.es/x" target="_blank" rel="noopener">Convocatoria CDTI Neotec 2026</a></h3>
+      <div class="meta">
+        <span class="fuente">CDTI</span>
+         · 📅 2026-04-10
+        <span class="score">★ 3.0</span>
+      </div>
+      <div class="resumen">Ayuda para empresas de base tecnológica</div>
+    </article>
+    
+    <article class="tarjeta">
+      <h3><a href="https://eic.eu/y" target="_blank" rel="noopener">EIC Accelerator abierto</a></h3>
+      <div class="meta">
+        <span class="fuente">EIC</span>
+         · 📅 2026-04-12
+        <span class="score">★ 2.0</span>
+      </div>
+      <div class="resumen">Grants y equity para pymes innovadoras</div>
+    </article>
+    
+  
+
+  <h2>📰 Noticias de digitalización para pymes (1)</h2>
+  
+    
+    <article class="tarjeta">
+      <h3><a href="https://news.example/z" target="_blank" rel="noopener">Las pymes aceleran su digitalización</a></h3>
+      <div class="meta">
+        <span class="fuente">Noticias digitalización</span>
+         · 📅 2026-04-14
+        <span class="score">★ 1.5</span>
+      </div>
+      <div class="resumen">Estudio sobre Kit Digital y adopción de IA</div>
+    </article>
+    
+  
+
+  <footer>
+    Generado automáticamente por <strong>Radar Ayudas I+D+i</strong>
+    · Fuentes: Google News RSS + organismos oficiales citados.
+  </footer>
+</main>
+</body>
+</html>
