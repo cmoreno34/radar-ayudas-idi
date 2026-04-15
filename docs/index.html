@@ -142,15 +142,15 @@
 // Las consultas REALES se construyen luego combinando ancla + sector + intereses
 // del usuario, para que distintos perfiles obtengan distintos resultados.
 const CENTROS = [
-  { id:"cdti",             nombre:"CDTI",                              ancla:"CDTI"                                    },
-  { id:"horizonte_europa", nombre:"Horizonte Europa",                  ancla:"\"Horizonte Europa\" OR \"Horizon Europe\"" },
-  { id:"eic",              nombre:"EIC — European Innovation Council", ancla:"\"EIC Accelerator\" OR \"EIC Pathfinder\""  },
-  { id:"enisa",            nombre:"ENISA",                             ancla:"ENISA"                                   },
-  { id:"red_es",           nombre:"Red.es / Kit Digital",              ancla:"\"Kit Digital\" OR \"Red.es\""              },
-  { id:"icex",             nombre:"ICEX",                              ancla:"ICEX"                                    },
-  { id:"mincotur",         nombre:"Ministerio de Industria",           ancla:"\"Ministerio de Industria\" OR PERTE"       },
-  { id:"aei",              nombre:"Agencia Estatal de Investigación",  ancla:"\"Agencia Estatal de Investigación\""       },
-  { id:"eureka",           nombre:"Eureka / Eurostars",                ancla:"Eurostars OR Eureka"                     },
+  { id:"cdti",             nombre:"CDTI",                              ancla:"CDTI"             },
+  { id:"horizonte_europa", nombre:"Horizonte Europa",                  ancla:"Horizonte Europa" },
+  { id:"eic",              nombre:"EIC — European Innovation Council", ancla:"EIC Accelerator"  },
+  { id:"enisa",            nombre:"ENISA",                             ancla:"ENISA"            },
+  { id:"red_es",           nombre:"Red.es / Kit Digital",              ancla:"Kit Digital"      },
+  { id:"icex",             nombre:"ICEX",                              ancla:"ICEX"             },
+  { id:"mincotur",         nombre:"Ministerio de Industria",           ancla:"PERTE"            },
+  { id:"aei",              nombre:"Agencia Estatal de Investigación",  ancla:"AEI ayudas"       },
+  { id:"eureka",           nombre:"Eureka / Eurostars",                ancla:"Eurostars"        },
 ];
 
 const INTERESES = [
@@ -194,17 +194,54 @@ function puntuar(texto, kws){
   const t = texto.toLowerCase();
   return kws.reduce((a,k)=> k && t.includes(k) ? a+1 : a, 0);
 }
-function urlRSS(consulta){
-  const gnews = `https://news.google.com/rss/search?q=${encodeURIComponent(consulta)}&hl=es&gl=ES&ceid=ES:es`;
-  return `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(gnews)}`;
+function urlGNews(consulta){
+  return `https://news.google.com/rss/search?q=${encodeURIComponent(consulta)}&hl=es&gl=ES&ceid=ES:es`;
 }
-async function fetchFeed(consulta){
+// Dos proxies CORS gratuitos: si el primero falla, probamos el segundo.
+function urlRSS_rss2json(consulta){
+  return `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(urlGNews(consulta))}`;
+}
+function urlRSS_allorigins(consulta){
+  return `https://api.allorigins.win/get?url=${encodeURIComponent(urlGNews(consulta))}`;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let FALLOS = 0;
+
+// Parsea un XML RSS (string) y devuelve items {title, link, pubDate, description}.
+function parseRSS(xmlString){
   try{
-    const r = await fetch(urlRSS(consulta));
-    if(!r.ok) return [];
-    const j = await r.json();
-    return j.items || [];
+    const doc = new DOMParser().parseFromString(xmlString, "text/xml");
+    return Array.from(doc.querySelectorAll("item")).map(it => ({
+      title:       it.querySelector("title")?.textContent || "",
+      link:        it.querySelector("link")?.textContent  || "",
+      pubDate:     it.querySelector("pubDate")?.textContent || "",
+      description: it.querySelector("description")?.textContent || "",
+    }));
   }catch(e){ return []; }
+}
+
+async function fetchFeed(consulta){
+  await sleep(250);
+  // Intento 1: rss2json (devuelve JSON limpio).
+  try{
+    const r = await fetch(urlRSS_rss2json(consulta));
+    if(r.ok){
+      const j = await r.json();
+      if(j.status === "ok" && j.items?.length) return j.items;
+    }
+  }catch(e){}
+  // Intento 2: allorigins (devuelve XML envuelto en JSON).
+  try{
+    const r = await fetch(urlRSS_allorigins(consulta));
+    if(r.ok){
+      const j = await r.json();
+      const items = parseRSS(j.contents || "");
+      if(items.length) return items;
+    }
+  }catch(e){}
+  FALLOS++;
+  console.warn("Sin resultados:", consulta);
+  return [];
 }
 function limpiarHTML(html){
   const tmp = document.createElement("div"); tmp.innerHTML = html||"";
@@ -315,9 +352,15 @@ async function buscarTodo(){
     avanzar(`Noticia: "${q}"…`);
   }
 
-  estado.textContent = `✅ ${RESULTADOS.length} resultados (${convocatorias.length+noticias.length} consultas)`;
+  const totalCons = convocatorias.length + noticias.length;
+  if(RESULTADOS.length === 0){
+    estado.textContent = `⚠️ 0 resultados (${FALLOS}/${totalCons} consultas fallaron). Reintenta en 1 min.`;
+  } else {
+    estado.textContent = `✅ ${RESULTADOS.length} resultados (${totalCons - FALLOS}/${totalCons} consultas OK)`;
+  }
   btnBuscar.disabled = false;
   btnCSV.disabled = RESULTADOS.length === 0;
+  FALLOS = 0;
   pintar();
 }
 
