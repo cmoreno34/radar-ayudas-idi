@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Radar I+D+i — Demo SL</title>
+<title>Radar de Ayudas I+D+i — Buscador</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root{
@@ -13,15 +13,40 @@
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
        color:var(--oscuro);background:var(--gris);line-height:1.5}
   header{background:linear-gradient(135deg,var(--azul),var(--azul2));color:#fff;
-         padding:32px 24px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-  header h1{margin:0;font-size:28px}
+         padding:28px 24px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+  header h1{margin:0;font-size:26px}
   header p{margin:6px 0 0;opacity:.9}
   main{max-width:1100px;margin:24px auto;padding:0 16px}
-  .perfil{background:#fff;border:1px solid var(--borde);border-radius:12px;
-          padding:16px 20px;margin-bottom:24px;display:flex;flex-wrap:wrap;gap:12px}
-  .chip{display:inline-block;background:var(--gris);border:1px solid var(--borde);
-        border-radius:999px;padding:4px 12px;font-size:13px}
-  h2{border-left:4px solid var(--azul2);padding-left:10px;margin-top:32px}
+
+  .panel{background:#fff;border:1px solid var(--borde);border-radius:12px;
+         padding:20px 24px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .panel h2{margin-top:0;color:var(--azul)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#374151}
+  input[type=text], select{width:100%;padding:9px 12px;border:1px solid var(--borde);
+    border-radius:8px;font-size:14px;background:#fff}
+  input[type=text]:focus, select:focus{outline:none;border-color:var(--azul2);
+    box-shadow:0 0 0 3px rgba(30,110,217,.15)}
+  .checkboxes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .checkboxes label{display:inline-flex;align-items:center;gap:6px;background:var(--gris);
+    border:1px solid var(--borde);border-radius:999px;padding:6px 12px;cursor:pointer;
+    font-weight:400;font-size:13px;margin:0}
+  .checkboxes label:hover{background:#e9eef7}
+  .checkboxes input{accent-color:var(--azul2)}
+  .acciones{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button{background:var(--azul2);color:#fff;border:none;border-radius:8px;
+    padding:11px 22px;font-size:15px;font-weight:600;cursor:pointer;
+    box-shadow:0 1px 3px rgba(0,0,0,.1);transition:background .15s}
+  button:hover{background:var(--azul)}
+  button:disabled{background:#9ca3af;cursor:wait}
+  button.secundario{background:#fff;color:var(--azul);border:1px solid var(--azul2)}
+  button.secundario:hover{background:var(--gris)}
+
+  #estado{margin-left:auto;font-size:13px;color:#6b7280}
+  .barra{height:6px;background:var(--gris);border-radius:999px;overflow:hidden;margin-top:12px}
+  .barra > div{height:100%;background:var(--azul2);width:0%;transition:width .3s}
+
+  h2.seccion{border-left:4px solid var(--azul2);padding-left:10px;margin-top:32px}
   .tarjeta{background:#fff;border:1px solid var(--borde);border-radius:12px;
            padding:16px 20px;margin-bottom:14px;transition:box-shadow .15s}
   .tarjeta:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
@@ -33,68 +58,287 @@
   .meta .score{background:var(--acento);color:#fff;padding:1px 8px;border-radius:999px;
                font-size:12px;margin-left:8px}
   .resumen{font-size:14px;color:#374151}
-  footer{text-align:center;color:#6b7280;font-size:12px;padding:24px}
   .vacio{background:#fff;border:1px dashed var(--borde);border-radius:12px;
          padding:24px;text-align:center;color:#6b7280}
+  footer{text-align:center;color:#6b7280;font-size:12px;padding:24px}
 </style>
 </head>
 <body>
+
 <header>
-  <h1>Radar de Ayudas I+D+i</h1>
-  <p>Resumen generado para <strong>Demo SL</strong> — 15/04/2026 13:22</p>
+  <h1>📡 Radar de Ayudas I+D+i</h1>
+  <p>Buscador en directo: CDTI, Horizonte Europa, ENISA, Kit Digital y noticias de digitalización para pymes</p>
 </header>
+
 <main>
-  <section class="perfil">
-    <span class="chip">🏢 software</span>
-    <span class="chip">👥 pyme</span>
-    <span class="chip">🌍 nacional</span>
-    <span class="chip">✨ digitalización</span><span class="chip">✨ IA</span>
+
+  <section class="panel">
+    <h2>1. Cuéntame de tu empresa</h2>
+    <div class="grid">
+      <div>
+        <label>Nombre de la empresa</label>
+        <input type="text" id="nombre" placeholder="Mi Empresa SL" value="Mi Empresa SL">
+      </div>
+      <div>
+        <label>Sector principal</label>
+        <select id="sector">
+          <option value="general">General</option>
+          <option value="agroalimentario">Agroalimentario</option>
+          <option value="industrial">Industrial</option>
+          <option value="salud">Salud</option>
+          <option value="software" selected>Software / TIC</option>
+          <option value="comercio">Comercio</option>
+          <option value="turismo">Turismo</option>
+          <option value="energía">Energía</option>
+          <option value="construcción">Construcción</option>
+          <option value="educación">Educación</option>
+          <option value="logística">Logística</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div>
+        <label>Tamaño</label>
+        <select id="tamano">
+          <option value="micro">Micro (&lt;10)</option>
+          <option value="pyme" selected>Pyme (&lt;50)</option>
+          <option value="mediana">Mediana (&lt;250)</option>
+          <option value="grande">Grande</option>
+        </select>
+      </div>
+      <div>
+        <label>Ámbito</label>
+        <select id="ambito">
+          <option value="local">Local</option>
+          <option value="nacional" selected>Nacional</option>
+          <option value="europeo">Europeo</option>
+          <option value="internacional">Internacional</option>
+        </select>
+      </div>
+    </div>
+
+    <label style="margin-top:18px">Intereses / líneas de I+D (selecciona varios)</label>
+    <div class="checkboxes" id="intereses"></div>
+
+    <div class="acciones">
+      <button id="btn-buscar">🔎 Buscar ayudas y noticias</button>
+      <button class="secundario" id="btn-csv" disabled>⬇️ Descargar CSV</button>
+      <span id="estado"></span>
+    </div>
+    <div class="barra"><div id="progreso"></div></div>
   </section>
 
-  <h2>🎯 Convocatorias abiertas (2)</h2>
-  
-    
-    <article class="tarjeta">
-      <h3><a href="https://cdti.es/x" target="_blank" rel="noopener">Convocatoria CDTI Neotec 2026</a></h3>
-      <div class="meta">
-        <span class="fuente">CDTI</span>
-         · 📅 2026-04-10
-        <span class="score">★ 3.0</span>
-      </div>
-      <div class="resumen">Ayuda para empresas de base tecnológica</div>
-    </article>
-    
-    <article class="tarjeta">
-      <h3><a href="https://eic.eu/y" target="_blank" rel="noopener">EIC Accelerator abierto</a></h3>
-      <div class="meta">
-        <span class="fuente">EIC</span>
-         · 📅 2026-04-12
-        <span class="score">★ 2.0</span>
-      </div>
-      <div class="resumen">Grants y equity para pymes innovadoras</div>
-    </article>
-    
-  
-
-  <h2>📰 Noticias de digitalización para pymes (1)</h2>
-  
-    
-    <article class="tarjeta">
-      <h3><a href="https://news.example/z" target="_blank" rel="noopener">Las pymes aceleran su digitalización</a></h3>
-      <div class="meta">
-        <span class="fuente">Noticias digitalización</span>
-         · 📅 2026-04-14
-        <span class="score">★ 1.5</span>
-      </div>
-      <div class="resumen">Estudio sobre Kit Digital y adopción de IA</div>
-    </article>
-    
-  
+  <section id="resultados"></section>
 
   <footer>
-    Generado automáticamente por <strong>Radar Ayudas I+D+i</strong>
-    · Fuentes: Google News RSS + organismos oficiales citados.
+    Datos en directo desde Google News RSS (vía servicio público <code>api.rss2json.com</code>).
+    Sin servidor: 100 % en tu navegador. ·
+    <a href="https://github.com/cmoreno34/radar-ayudas-idi" target="_blank">Código fuente</a>
   </footer>
 </main>
+
+<script>
+// ================== Configuración ==================
+const CENTROS = [
+  { id:"cdti", nombre:"CDTI", consultas:[
+    "site:cdti.es convocatoria","CDTI ayudas convocatoria abierta","CDTI Neotec","CDTI Misiones"]},
+  { id:"horizonte_europa", nombre:"Horizonte Europa", consultas:[
+    "Horizonte Europa convocatoria abierta pymes","Horizon Europe call open SMEs","Cluster 4 digital Horizon Europe"]},
+  { id:"eic", nombre:"EIC — European Innovation Council", consultas:[
+    "EIC Pathfinder call","EIC Accelerator open call","European Innovation Council convocatoria"]},
+  { id:"enisa", nombre:"ENISA", consultas:[
+    "site:enisa.es línea","ENISA préstamo participativo pymes","ENISA emprendedores"]},
+  { id:"red_es", nombre:"Red.es / Kit Digital", consultas:[
+    "Kit Digital convocatoria pymes","Red.es ayudas digitalización","Acelera Pyme ayudas"]},
+  { id:"icex", nombre:"ICEX", consultas:[
+    "ICEX Next pymes internacionalización","ICEX convocatoria ayudas"]},
+  { id:"mincotur", nombre:"Ministerio de Industria", consultas:[
+    "Ministerio Industria ayudas I+D pymes convocatoria","PERTE ayudas convocatoria"]},
+  { id:"aei", nombre:"Agencia Estatal de Investigación", consultas:[
+    "Agencia Estatal Investigación convocatoria","AEI ayudas I+D"]},
+  { id:"eureka", nombre:"Eureka / Eurostars", consultas:[
+    "Eurostars convocatoria pymes I+D","Eureka cluster call"]},
+];
+
+const CONSULTAS_NOTICIAS = [
+  "digitalización pymes España",
+  "transformación digital pequeña empresa",
+  "ayudas digitalización pymes",
+  "inteligencia artificial pymes España",
+  "ciberseguridad pymes",
+];
+
+const INTERESES = [
+  "digitalización","inteligencia artificial","ciberseguridad","sostenibilidad",
+  "economía circular","biotecnología","industria 4.0","internacionalización",
+  "formación","I+D básica"
+];
+
+// ================== Render chips de intereses ==================
+const cont = document.getElementById("intereses");
+INTERESES.forEach(i => {
+  cont.insertAdjacentHTML("beforeend",
+    `<label><input type="checkbox" value="${i}">${i}</label>`);
+});
+
+// ================== Variables UI ==================
+const btnBuscar = document.getElementById("btn-buscar");
+const btnCSV = document.getElementById("btn-csv");
+const estado = document.getElementById("estado");
+const progreso = document.getElementById("progreso");
+const divResultados = document.getElementById("resultados");
+let RESULTADOS = [];
+
+btnBuscar.addEventListener("click", buscarTodo);
+btnCSV.addEventListener("click", descargarCSV);
+
+// ================== Funciones ==================
+function leerPerfil(){
+  return {
+    nombre:   document.getElementById("nombre").value || "Mi Empresa",
+    sector:   document.getElementById("sector").value,
+    tamano:   document.getElementById("tamano").value,
+    ambito:   document.getElementById("ambito").value,
+    intereses: Array.from(document.querySelectorAll("#intereses input:checked")).map(c=>c.value),
+  };
+}
+function palabrasClave(p){
+  return [p.sector, p.tamano, p.ambito, ...p.intereses].map(s=>(s||"").toLowerCase());
+}
+function puntuar(texto, kws){
+  const t = texto.toLowerCase();
+  return kws.reduce((a,k)=> k && t.includes(k) ? a+1 : a, 0);
+}
+function urlRSS(consulta){
+  const gnews = `https://news.google.com/rss/search?q=${encodeURIComponent(consulta)}&hl=es&gl=ES&ceid=ES:es`;
+  return `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(gnews)}`;
+}
+async function fetchFeed(consulta){
+  try{
+    const r = await fetch(urlRSS(consulta));
+    if(!r.ok) return [];
+    const j = await r.json();
+    return j.items || [];
+  }catch(e){ return []; }
+}
+function limpiarHTML(html){
+  const tmp = document.createElement("div"); tmp.innerHTML = html||"";
+  return (tmp.textContent || "").trim().slice(0,400);
+}
+function isoFecha(s){
+  if(!s) return "";
+  const d = new Date(s);
+  return isNaN(d) ? "" : d.toISOString().slice(0,10);
+}
+function escape(s){ return (s||"").replace(/[&<>"']/g, m=>(
+  {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
+
+async function buscarTodo(){
+  const perfil = leerPerfil();
+  const kws = palabrasClave(perfil);
+  RESULTADOS = [];
+  divResultados.innerHTML = "";
+  btnCSV.disabled = true;
+  btnBuscar.disabled = true;
+
+  const total = CENTROS.reduce((a,c)=>a+c.consultas.length,0) + CONSULTAS_NOTICIAS.length;
+  let hechas = 0;
+  const vistos = new Set();
+
+  function avanzar(txt){
+    hechas++;
+    progreso.style.width = (100*hechas/total)+"%";
+    estado.textContent = `${txt} (${hechas}/${total})`;
+  }
+
+  for(const centro of CENTROS){
+    for(const consulta of centro.consultas){
+      const items = await fetchFeed(consulta);
+      for(const it of items){
+        if(!it.link || vistos.has(it.link)) continue;
+        vistos.add(it.link);
+        const resumen = limpiarHTML(it.description);
+        RESULTADOS.push({
+          titulo: it.title || "(sin título)",
+          fuente: centro.nombre,
+          fecha: isoFecha(it.pubDate),
+          url: it.link,
+          resumen,
+          categoria:"convocatoria",
+          centro_id: centro.id,
+          puntuacion: puntuar((it.title||"")+" "+resumen, kws),
+        });
+      }
+      avanzar(`Buscando en ${centro.nombre}…`);
+    }
+  }
+
+  for(const consulta of CONSULTAS_NOTICIAS){
+    const items = await fetchFeed(consulta);
+    for(const it of items){
+      if(!it.link || vistos.has(it.link)) continue;
+      vistos.add(it.link);
+      const resumen = limpiarHTML(it.description);
+      RESULTADOS.push({
+        titulo: it.title || "(sin título)",
+        fuente: "Noticias digitalización",
+        fecha: isoFecha(it.pubDate),
+        url: it.link,
+        resumen,
+        categoria:"noticia",
+        centro_id:"",
+        puntuacion: puntuar((it.title||"")+" "+resumen, kws),
+      });
+    }
+    avanzar(`Buscando noticias…`);
+  }
+
+  estado.textContent = `✅ ${RESULTADOS.length} resultados`;
+  btnBuscar.disabled = false;
+  btnCSV.disabled = RESULTADOS.length === 0;
+  pintar();
+}
+
+function pintar(){
+  const ord = [...RESULTADOS].sort((a,b)=>
+    b.puntuacion - a.puntuacion || (b.fecha||"").localeCompare(a.fecha||""));
+  const conv = ord.filter(r=>r.categoria==="convocatoria");
+  const noti = ord.filter(r=>r.categoria==="noticia");
+
+  divResultados.innerHTML = `
+    <h2 class="seccion">🎯 Convocatorias (${conv.length})</h2>
+    ${conv.length ? conv.map(tarjetaHTML).join("") :
+      '<div class="vacio">Sin resultados de convocatorias.</div>'}
+    <h2 class="seccion">📰 Noticias de digitalización (${noti.length})</h2>
+    ${noti.length ? noti.map(tarjetaHTML).join("") :
+      '<div class="vacio">Sin noticias.</div>'}
+  `;
+  divResultados.scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function tarjetaHTML(r){
+  return `<article class="tarjeta">
+    <h3><a href="${escape(r.url)}" target="_blank" rel="noopener">${escape(r.titulo)}</a></h3>
+    <div class="meta">
+      <span class="fuente">${escape(r.fuente)}</span>
+      ${r.fecha?` · 📅 ${r.fecha}`:""}
+      ${r.puntuacion>0?`<span class="score">★ ${r.puntuacion}</span>`:""}
+    </div>
+    <div class="resumen">${escape(r.resumen)}</div>
+  </article>`;
+}
+
+function descargarCSV(){
+  const cols = ["titulo","fuente","fecha","url","resumen","categoria","centro_id","puntuacion"];
+  const filas = [cols.join(",")];
+  for(const r of RESULTADOS){
+    filas.push(cols.map(c => `"${String(r[c]||"").replace(/"/g,'""')}"`).join(","));
+  }
+  const blob = new Blob([filas.join("\n")], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `radar_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+</script>
 </body>
 </html>
